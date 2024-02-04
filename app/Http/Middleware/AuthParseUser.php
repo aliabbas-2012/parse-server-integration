@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Parse\ParseUser;
+use Parse\ParseException;
 class AuthParseUser
 {
     /**
@@ -15,8 +16,16 @@ class AuthParseUser
      */
     public function handle(Request $request, Closure $next)
     {
-        if($user = ParseUser::become($request->header('AUTHORIZATION'))){
-            return $next($request);
+        $error_message = "";
+        try {
+            if($user = ParseUser::become($request->header('AUTHORIZATION'))){
+                $request->user = $user;
+                return $next($request);
+            }
+
+        } catch (ParseException $ex) {
+            $error_message = $ex->getMessage();
         }
+        return response()->json(['error' => 'UnAuthorized.', 'message' => $error_message], 401);
     }
 }
